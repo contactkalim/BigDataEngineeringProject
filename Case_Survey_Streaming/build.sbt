@@ -1,0 +1,13 @@
+name         := "CaseSurveyStreaming"
+version      := "1.0"
+organization := "ShadabKalim"
+scalaVersion := "2.11.8"
+val sparkVersion = "2.1.0"
+libraryDependencies += "org.apache.spark" %% "spark-core" % sparkVersion % "provided"
+libraryDependencies += "org.apache.spark" %% "spark-sql" % sparkVersion % "provided"
+libraryDependencies += "org.apache.spark" %% "spark-mllib" % sparkVersion % "provided"
+libraryDependencies += "org.apache.spark" %% "spark-streaming-kafka" % "1.6.0"
+libraryDependencies += "org.apache.hbase" % "hbase-common" % "1.2.0"
+libraryDependencies += "org.apache.hbase" % "hbase-client" % "1.2.0"
+libraryDependencies += "org.apache.hbase" % "hbase-server" % "1.2.0"
+resolvers += Resolver.mavenLocal
