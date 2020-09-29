@@ -61,8 +61,8 @@ case class Survey(Q1:Integer, Q3:Integer, Q2:Integer, Q5:Integer, Q4:String, cas
 	spark.sqlContext.setConf("spark.sql.shuffle.partitions", "400")
 	
 	val hconf = HBaseConfiguration.create()
-	hconf.set("hbase.zookeeper.quorum", "ip-20-0-31-210.ec2.internal")
-	hconf.set(TableInputFormat.INPUT_TABLE,"edureka_766323_futurecart_Cases")
+	hconf.set("hbase.zookeeper.quorum", "ip-XX-XX-XX-XX.ec2.internal")
+	hconf.set(TableInputFormat.INPUT_TABLE,"username_futurecart_Cases")
 	
 	val hbasecaseRDD = spark.sparkContext.newAPIHadoopRDD(
 							hconf,
@@ -75,7 +75,7 @@ case class Survey(Q1:Integer, Q3:Integer, Q2:Integer, Q5:Integer, Q4:String, cas
 	val caseRDD = caseResultRDD.map(parseCaseRow)
 	val caseStreamDF = caseRDD.toDF	
 	
-	hconf.set(TableInputFormat.INPUT_TABLE,"edureka_766323_futurecart_Surveys")
+	hconf.set(TableInputFormat.INPUT_TABLE,"username_futurecart_Surveys")
 	println("Writing data from HBase to Hive.")
 	val hbasesurveyRDD = spark.sparkContext.newAPIHadoopRDD(
 							hconf,
@@ -91,57 +91,57 @@ case class Survey(Q1:Integer, Q3:Integer, Q2:Integer, Q5:Integer, Q4:String, cas
 	surveyStreamDF.createOrReplaceTempView("case_survey_details_Hbase_data")
 	
 	val case_details_Hbase_data_df = spark.sql("select *, cast(create_timestamp as date) as create_date, from_unixtime(unix_timestamp()) as row_insertion_dttm from case_details_Hbase_data")
-	case_details_Hbase_data_df.write.mode("overwrite").partitionBy("create_date").format("orc").saveAsTable("edureka_766323.futurecart_case_dly_incr")
-	println("Created table edureka_766323.futurecart_case_dly_incr")
+	case_details_Hbase_data_df.write.mode("overwrite").partitionBy("create_date").format("orc").saveAsTable("username.futurecart_case_dly_incr")
+	println("Created table username.futurecart_case_dly_incr")
 	
 	val case_survey_details_Hbase_data_df = spark.sql("select *, cast(survey_timestamp as date) as survey_date, from_unixtime(unix_timestamp()) as row_insertion_dttm from case_survey_details_Hbase_data")
-	case_survey_details_Hbase_data_df.write.mode("overwrite").partitionBy("survey_date").format("orc").saveAsTable("edureka_766323.futurecart_survey_dly_incr")
-	println("Created table edureka_766323.futurecart_survey_dly_incr")
+	case_survey_details_Hbase_data_df.write.mode("overwrite").partitionBy("survey_date").format("orc").saveAsTable("username.futurecart_survey_dly_incr")
+	println("Created table username.futurecart_survey_dly_incr")
 	surveyRDD.unpersist()
 	caseRDD.unpersist()
 	
 	spark.sql("""
-	create table edureka_766323.futurecart_case_dly (status string, category string, sub_category string, last_modified_timestamp string, case_no string, create_timestamp string, 
+	create table username.futurecart_case_dly (status string, category string, sub_category string, last_modified_timestamp string, case_no string, create_timestamp string, 
 	created_employee_key string, call_center_id string, product_code string, country_cd string, communication_mode string, row_insertion_dttm timestamp) 
 	PARTITIONED BY (create_date date) 
 	STORED AS orc 
 	"""); 
 
 	spark.sql("""
-	insert overwrite table edureka_766323.futurecart_case_dly partition(create_date) 
+	insert overwrite table username.futurecart_case_dly partition(create_date) 
 	select *, from_unixtime(unix_timestamp()) as row_insertion_dttm from (
 	select distinct status, category, sub_category, last_modified_timestamp, case_no, create_timestamp, created_employee_key, 
 	call_center_id, product_code, country_cd, communication_mode, create_date from 
 	(
 	select status, category, sub_category, last_modified_timestamp, case_no, create_timestamp, created_employee_key, 
-	call_center_id, product_code, country_cd, communication_mode, cast(create_timestamp as date) as create_date from edureka_766323.futurecart_case_dly_incr 
+	call_center_id, product_code, country_cd, communication_mode, cast(create_timestamp as date) as create_date from username.futurecart_case_dly_incr 
 	union 
 	select status, category, sub_category, last_modified_timestamp, case_no, create_timestamp, created_employee_key, 
-	call_center_id, product_code, country_cd, communication_mode, cast(create_timestamp as date) as create_date from edureka_766323.futurecart_case_dly_stg 
+	call_center_id, product_code, country_cd, communication_mode, cast(create_timestamp as date) as create_date from username.futurecart_case_dly_stg 
 	) A ) B
 	"""); 
-	println("Created table edureka_766323.futurecart_case_dly")
+	println("Created table username.futurecart_case_dly")
 
 	spark.sql("""
-	create table edureka_766323.futurecart_survey_dly (Q1 int, Q3 int, Q2 int, Q5 int, Q4 string, case_no string, survey_timestamp string
+	create table username.futurecart_survey_dly (Q1 int, Q3 int, Q2 int, Q5 int, Q4 string, case_no string, survey_timestamp string
 	, survey_id string, row_insertion_dttm timestamp) 
 	PARTITIONED BY (survey_date date) 
 	STORED AS orc 
 	"""); 
 	spark.sql("""
-	insert overwrite table edureka_766323.futurecart_survey_dly partition(survey_date) 
+	insert overwrite table username.futurecart_survey_dly partition(survey_date) 
 	select *, from_unixtime(unix_timestamp()) as row_insertion_dttm from (
 	select distinct Q1, Q3, Q2, Q5, Q4, case_no, survey_timestamp, survey_id, survey_date from 
 	(
-	select Q1, Q3, Q2, Q5, Q4, case_no, survey_timestamp, survey_id, cast(survey_timestamp as date) as survey_date from edureka_766323.futurecart_survey_dly_incr 
+	select Q1, Q3, Q2, Q5, Q4, case_no, survey_timestamp, survey_id, cast(survey_timestamp as date) as survey_date from username.futurecart_survey_dly_incr 
 	union  
-	select Q1, Q3, Q2, Q5, Q4, case_no, survey_timestamp, survey_id, cast(survey_timestamp as date) as survey_date from edureka_766323.futurecart_survey_dly_stg 
+	select Q1, Q3, Q2, Q5, Q4, case_no, survey_timestamp, survey_id, cast(survey_timestamp as date) as survey_date from username.futurecart_survey_dly_stg 
 	) A ) B
 	"""); 
-	println("Created table edureka_766323.futurecart_survey_dly")
+	println("Created table username.futurecart_survey_dly")
 	
 	spark.sql("""
-	create table edureka_766323.fact_futurecart_case_survey_dly (status string, category string, sub_category string, last_modified_timestamp timestamp, case_no string, 
+	create table username.fact_futurecart_case_survey_dly (status string, category string, sub_category string, last_modified_timestamp timestamp, case_no string, 
 	create_timestamp timestamp, created_employee_key string, call_center_id string, product_code string, country_cd string, communication_mode string,  
 	Q1 int, Q3 int, Q2 int, Q5 int, Q4 string, survey_timestamp timestamp, survey_id string, row_insertion_dttm timestamp) 
 	PARTITIONED BY (create_date date) 
@@ -150,7 +150,7 @@ case class Survey(Q1:Integer, Q3:Integer, Q2:Integer, Q5:Integer, Q4:String, cas
 	
 	val numPartitions = 500
 	spark.sql("""
-	insert overwrite table edureka_766323.fact_futurecart_case_survey_dly partition(create_date) 
+	insert overwrite table username.fact_futurecart_case_survey_dly partition(create_date) 
 	select status, category, sub_category, last_modified_timestamp, C.case_no, create_timestamp, created_employee_key, 
 	call_center_id, product_code, country_cd, communication_mode, Q1, Q3, Q2, Q5, Q4, survey_timestamp, survey_id, 
 	from_unixtime(unix_timestamp()) as row_insertion_dttm, cast(create_timestamp as date) as create_date from 
@@ -158,16 +158,16 @@ case class Survey(Q1:Integer, Q3:Integer, Q2:Integer, Q5:Integer, Q4:String, cas
 	select *, row_number() over(partition by case_no order by last_modified_timestamp desc) as rn from ( 
     select  status, category, sub_category, date_format(last_modified_timestamp,'yyyy-MM-dd HH:mm:ss') as last_modified_timestamp, case_no,  
 	date_format(create_timestamp,'yyyy-MM-dd HH:mm:ss') as create_timestamp, created_employee_key, 
-	call_center_id, product_code, country_cd, communication_mode from edureka_766323.futurecart_case_dly ) t) t1 
+	call_center_id, product_code, country_cd, communication_mode from username.futurecart_case_dly ) t) t1 
 	where t1.rn = 1) C 
 	left outer join 
 	(select * from ( 
 	select *, row_number() over(partition by case_no order by survey_timestamp desc) as rn from ( 
-    select Q1, Q3, Q2, Q5, Q4, case_no, date_format(survey_timestamp,'yyyy-MM-dd HH:mm:ss') as survey_timestamp, survey_id from edureka_766323.futurecart_survey_dly ) t) t1 
+    select Q1, Q3, Q2, Q5, Q4, case_no, date_format(survey_timestamp,'yyyy-MM-dd HH:mm:ss') as survey_timestamp, survey_id from username.futurecart_survey_dly ) t) t1 
 	where t1.rn = 1) S  
 	on (C.case_no = S.case_no) 
 	""").repartition(numPartitions);
-	println("Created table edureka_766323.fact_futurecart_case_survey_dly")
+	println("Created table username.fact_futurecart_case_survey_dly")
 	
 	println("Completed process.")
 
