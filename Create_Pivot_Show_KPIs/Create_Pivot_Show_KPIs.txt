@@ -1,0 +1,221 @@
+spark.sql("""
+create table edureka_766323.pivot_fact_futurecart_case_survey_dly (
+status string,last_modified_timestamp timestamp,case_no string,create_timestamp timestamp, product_code string,country_cd string,communication_mode string,
+Q1  int,Q3  int,Q2  int,Q5  int,Q4 string, survey_timestamp string, call_center_vendor string,location string,call_center_country string,category_description string,
+sub_category_description string, Priority_key string,priority string,severity string,sla_hours string, hours_to_close string, first_name string,last_name string,email string,
+gender string,ldap string,manager string,hire_date string,department string,brand string,commodity_desc string,sub_commodity_desc string,support_process_feedback string, 
+employee_conversation_feedback string,employee_technical_feedback string,referral_feedback string,overall_feedback string,	case_create_date_desc string, case_create_week_day_nbr string, 
+case_create_week_number string, case_create_week_name string, case_create_year_week_number string,case_create_month_number string, case_create_month_name string,
+case_create_quarter_number string, case_create_quarter_name string, case_create_half_year_number string, case_create_half_year_name string ) 
+PARTITIONED BY (case_create_date date) 
+STORED AS orc 
+""");  
+
+spark.sqlContext.setConf("hive.exec.dynamic.partition", "true")
+spark.sqlContext.setConf("hive.exec.dynamic.partition.mode", "nonstrict")
+
+spark.sql("""
+insert overwrite table edureka_766323.pivot_fact_futurecart_case_survey_dly partition(case_create_date) 
+select status,last_modified_timestamp,case_no,create_timestamp, product_code,country_cd,communication_mode,Q1 ,Q3 ,Q2 ,Q5 ,Q4, 
+survey_timestamp, call_center_vendor,location,call_center_country,category_description,sub_category_description, Priority_key,priority,severity,sla_hours, 
+hours_to_close, first_name,last_name,email,gender,ldap,manager,hire_date,department,brand,commodity_desc,sub_commodity_desc, 
+case when support_process_feedback = -1 then 'Negative' when support_process_feedback = 0 then 'Neutral' when support_process_feedback = 1 then 'Positive' else null end as support_process_feedback, 
+case when employee_conversation_feedback = -1 then 'Negative' when employee_conversation_feedback = 0 then 'Neutral' when employee_conversation_feedback = 1 then 'Positive' else null end as employee_conversation_feedback, 
+case when employee_technical_feedback = -1 then 'Negative' when employee_technical_feedback = 0 then 'Neutral' when employee_technical_feedback = 1 then 'Positive' else null end as employee_technical_feedback, 
+case when referral_feedback = -1 then 'Negative' when referral_feedback = 0 then 'Neutral' when referral_feedback = 1 then 'Positive' else null end as referral_feedback, 
+case when support_process_feedback + employee_conversation_feedback + employee_technical_feedback + referral_feedback > 0  then 'Positive' 
+when support_process_feedback + employee_conversation_feedback + employee_technical_feedback + referral_feedback = 0  then 'Neutral' 
+when support_process_feedback + employee_conversation_feedback + employee_technical_feedback + referral_feedback < 0  then 'Negative' 
+else null end as overall_feedback, 
+case_create_date_desc, case_create_week_day_nbr, case_create_week_number, case_create_week_name, case_create_year_week_number, case_create_month_number, case_create_month_name, 
+case_create_quarter_number, case_create_quarter_name, case_create_half_year_number, case_create_half_year_name, case_create_date
+from ( 
+select status,last_modified_timestamp,case_no,create_timestamp, product_code,country_cd,communication_mode,Q1 ,Q3 ,Q2 ,Q5 ,Q4, 
+survey_timestamp, call_center_vendor,location,country as call_center_country,category_description,sub_category_description, Priority_key,priority,severity,SLA as sla_hours, 
+case when status = 'Closed' then (unix_timestamp(last_modified_timestamp) - unix_timestamp(create_timestamp))/3600 else null end as hours_to_close,  
+first_name,last_name,email,gender,ldap,manager,hire_date,department,brand,commodity_desc,sub_commodity_desc, 
+case 
+when Q1 between (select cast(substr(negative_response_range,1,1) as int) from edureka_766323.dim_futurecart_questions where question_id ='Q1') 
+and (select cast(substr(negative_response_range,3,3) as int) from edureka_766323.dim_futurecart_questions where question_id ='Q1') 
+then -1 
+when Q1 between (select cast(substr(neutral_response_range,1,1) as int) from edureka_766323.dim_futurecart_questions where question_id ='Q1') 
+and (select cast(substr(neutral_response_range,3,3) as int) from edureka_766323.dim_futurecart_questions where question_id ='Q1') 
+then 0 
+when Q1 between (select cast(substr(positive_response_range,1,1) as int) from edureka_766323.dim_futurecart_questions where question_id ='Q1') 
+and (select cast(substr(positive_response_range,3,3) as int) from edureka_766323.dim_futurecart_questions where question_id ='Q1') 
+then 1 
+else null end as support_process_feedback, 
+case 
+when Q2 between (select cast(substr(negative_response_range,1,1) as int) from edureka_766323.dim_futurecart_questions where question_id ='Q2') 
+and (select cast(substr(negative_response_range,3,3) as int) from edureka_766323.dim_futurecart_questions where question_id ='Q2') 
+then -1 
+when Q2 between (select cast(substr(neutral_response_range,1,1) as int) from edureka_766323.dim_futurecart_questions where question_id ='Q2') 
+and (select cast(substr(neutral_response_range,3,3) as int) from edureka_766323.dim_futurecart_questions where question_id ='Q2') 
+then 0 
+when Q2 between (select cast(substr(positive_response_range,1,1) as int) from edureka_766323.dim_futurecart_questions where question_id ='Q2') 
+and (select cast(substr(positive_response_range,3,3) as int) from edureka_766323.dim_futurecart_questions where question_id ='Q2') 
+then 1 
+else null end as employee_conversation_feedback, 
+case 
+when Q3 between (select cast(substr(negative_response_range,1,1) as int) from edureka_766323.dim_futurecart_questions where question_id ='Q3') 
+and (select cast(substr(negative_response_range,3,3) as int) from edureka_766323.dim_futurecart_questions where question_id ='Q3') 
+then -1 
+when Q3 between (select cast(substr(neutral_response_range,1,1) as int) from edureka_766323.dim_futurecart_questions where question_id ='Q3') 
+and (select cast(substr(neutral_response_range,3,3) as int) from edureka_766323.dim_futurecart_questions where question_id ='Q3') 
+then 0 
+when Q3 between (select cast(substr(positive_response_range,1,1) as int) from edureka_766323.dim_futurecart_questions where question_id ='Q3')  
+and (select cast(substr(positive_response_range,3,3) as int) from edureka_766323.dim_futurecart_questions where question_id ='Q3') 
+then 1 
+else null end as employee_technical_feedback, 
+case 
+when Q5 between (select cast(substr(negative_response_range,1,1) as int) from edureka_766323.dim_futurecart_questions where question_id ='Q5') 
+and (select cast(substr(negative_response_range,3,3) as int) from edureka_766323.dim_futurecart_questions where question_id ='Q5') 
+then -1 
+when Q5 between (select cast(substr(neutral_response_range,1,1) as int) from edureka_766323.dim_futurecart_questions where question_id ='Q5') 
+and (select cast(substr(neutral_response_range,3,3) as int) from edureka_766323.dim_futurecart_questions where question_id ='Q5') 
+then 0 
+when Q5 between (select cast(substr(positive_response_range,1,1) as int) from edureka_766323.dim_futurecart_questions where question_id ='Q5') 
+and (select cast(substr(positive_response_range,3,3) as int) from edureka_766323.dim_futurecart_questions where question_id ='Q5') 
+then 1 
+else null end as referral_feedback, 
+date_desc as case_create_date_desc, week_day_nbr as case_create_week_day_nbr, week_number as case_create_week_number, week_name as case_create_week_name, 
+year_week_number as case_create_year_week_number, month_number as case_create_month_number, month_name as case_create_month_name, quarter_number as case_create_quarter_number, 
+quarter_name as case_create_quarter_name, half_year_number as case_create_half_year_number, half_year_name as case_create_half_year_name, A.create_date as case_create_date  
+from edureka_766323.fact_futurecart_case_survey_dly A 
+left outer join edureka_766323.dim_futurecart_calendar B on (cast(A.create_timestamp as date) = B.calendar_date) 
+left outer join edureka_766323.dim_futurecart_call_center C on (A.call_center_id = C.call_center_id) 
+left outer join 
+(Select CT.category_key, CT.sub_category_key, CT.category_description, CT.sub_category_description, 
+P.Priority_key, P.priority,P.severity, P.SLA from edureka_766323.dim_futurecart_case_category CT 
+left outer join edureka_766323.dim_futurecart_case_priority P on (CT.priority = P.Priority_key)) D 
+on (A.category = D.category_key and A.sub_category = D.sub_category_key) 
+left outer join edureka_766323.dim_futurecart_employee E on (A.created_employee_key = E.emp_key) 
+left outer join edureka_766323.dim_futurecart_product F on (A.product_code = F.product_id) 
+) TT 
+""");
+
+-- KPIs (Both on real-time data and batch-processed data)
+
+-- Total numbers of cases
+
+spark.sql("""
+select count(case_no) as Total_Numbers_of_Cases from edureka_766323.pivot_fact_futurecart_case_survey_dly 
+""").show(false);  
+
+-- Total open cases in the last 1 hour
+
+spark.sql("""
+select count(case_no) as Total_Open_Cases_Last_1HR from edureka_766323.pivot_fact_futurecart_case_survey_dly 
+where status = 'Open' and last_modified_timestamp between (current_timestamp() - INTERVAL 1 HOUR) and current_timestamp() 
+""").show(false);  
+
+-- Total closed cases in the last 1 hour
+
+spark.sql("""
+select count(case_no) as Total_Closed_Cases_Last_1HR from edureka_766323.pivot_fact_futurecart_case_survey_dly 
+where status = 'Closed' and last_modified_timestamp between (current_timestamp() - INTERVAL 1 HOUR) and current_timestamp() 
+""").show(false);  
+
+-- Total priority cases
+
+spark.sql("""
+select count(case_no) as Total_Piority_1_Cases from edureka_766323.pivot_fact_futurecart_case_survey_dly 
+where Priority_key = 'P1'  
+""").show(false); 
+
+spark.sql("""
+select count(case_no) as Total_High_Piority_Cases from edureka_766323.pivot_fact_futurecart_case_survey_dly 
+where priority in ('High', 'Highest') 
+""").show(false);  
+
+-- Total positive/negative responses in the last 1 hour
+
+spark.sql("""
+select overall_feedback as Response, count(*) as Total_Response_Count from edureka_766323.pivot_fact_futurecart_case_survey_dly 
+where overall_feedback is not null and overall_feedback <> 'Neutral' 
+and last_modified_timestamp between (current_timestamp() - INTERVAL 1 HOUR) and current_timestamp() 
+group by overall_feedback 
+""").show(false); 
+
+-- Total number of surveys in the last 1 hour
+
+spark.sql("""
+select count(case_no) as Total_Surveys_Last_1HR from edureka_766323.pivot_fact_futurecart_case_survey_dly 
+where survey_timestamp is not null and last_modified_timestamp between (current_timestamp() - INTERVAL 1 HOUR) and current_timestamp() 
+""").show(false);  
+
+-- Total open cases in a day/week/month
+
+spark.sql("""
+select count(case_no) as Total_Open_Cases_Last_1Day from edureka_766323.pivot_fact_futurecart_case_survey_dly 
+where status = 'Open' and last_modified_timestamp between (current_timestamp() - INTERVAL 1 DAY) and current_timestamp() 
+""").show(false);  
+
+spark.sql("""
+select count(case_no) as Total_Open_Cases_Last_Week from edureka_766323.pivot_fact_futurecart_case_survey_dly 
+where status = 'Open' and last_modified_timestamp between (current_timestamp() - INTERVAL 7 DAY) and current_timestamp() 
+""").show(false);  
+
+spark.sql("""
+select count(case_no) as Total_Open_Cases_Last_1Month from edureka_766323.pivot_fact_futurecart_case_survey_dly 
+where status = 'Open' and last_modified_timestamp between (current_timestamp() - INTERVAL 1 MONTH) and current_timestamp() 
+""").show(false);  
+
+-- Total closed cases in a day/week/month
+
+spark.sql("""
+select count(case_no) as Total_Closed_Cases_Last_1Day from edureka_766323.pivot_fact_futurecart_case_survey_dly 
+where status = 'Closed' and last_modified_timestamp between (current_timestamp() - INTERVAL 1 DAY) and current_timestamp() 
+""").show(false);  
+
+spark.sql("""
+select count(case_no) as Total_Closed_Cases_Last_Week from edureka_766323.pivot_fact_futurecart_case_survey_dly 
+where status = 'Closed' and last_modified_timestamp between (current_timestamp() - INTERVAL 7 DAY) and current_timestamp() 
+""").show(false);  
+
+spark.sql("""
+select count(case_no) as Total_Closed_Cases_Last_1Month from edureka_766323.pivot_fact_futurecart_case_survey_dly 
+where status = 'Closed' and last_modified_timestamp between (current_timestamp() - INTERVAL 1 MONTH) and current_timestamp() 
+""").show(false); 
+
+-- Total positive/negative responses in a day/week/month
+
+spark.sql("""
+select overall_feedback as Response, count(*) as Total_Response_Count_Last_1Day from edureka_766323.pivot_fact_futurecart_case_survey_dly 
+where overall_feedback is not null and overall_feedback <> 'Neutral' 
+and last_modified_timestamp between (current_timestamp() - INTERVAL 1 DAY) and current_timestamp() 
+group by overall_feedback 
+""").show(false); 
+
+spark.sql("""
+select overall_feedback as Response, count(*) as Total_Response_Count_Last_1Week from edureka_766323.pivot_fact_futurecart_case_survey_dly 
+where overall_feedback is not null and overall_feedback <> 'Neutral' 
+and last_modified_timestamp between (current_timestamp() - INTERVAL 7 DAY) and current_timestamp() 
+group by overall_feedback 
+""").show(false); 
+
+spark.sql("""
+select overall_feedback as Response, count(*) as Total_Response_Count_Last_1Month from edureka_766323.pivot_fact_futurecart_case_survey_dly 
+where overall_feedback is not null and overall_feedback <> 'Neutral' 
+and last_modified_timestamp between (current_timestamp() - INTERVAL 1 MONTH) and current_timestamp() 
+group by overall_feedback 
+""").show(false); 
+
+-- Total number of surveys in a day/week/month
+
+spark.sql("""
+select count(case_no) as Total_Surveys_Last_1Day from edureka_766323.pivot_fact_futurecart_case_survey_dly 
+where survey_timestamp is not null and last_modified_timestamp between (current_timestamp() - INTERVAL 1 DAY) and current_timestamp() 
+""").show(false);  
+
+spark.sql("""
+select count(case_no) as Total_Surveys_Last_1Week from edureka_766323.pivot_fact_futurecart_case_survey_dly 
+where survey_timestamp is not null and last_modified_timestamp between (current_timestamp() - INTERVAL 7 DAY) and current_timestamp() 
+""").show(false);  
+
+spark.sql("""
+select count(case_no) as Total_Surveys_Last_1Month from edureka_766323.pivot_fact_futurecart_case_survey_dly 
+where survey_timestamp is not null and last_modified_timestamp between (current_timestamp() - INTERVAL 1 MONTH) and current_timestamp() 
+""").show(false);  
+
+
