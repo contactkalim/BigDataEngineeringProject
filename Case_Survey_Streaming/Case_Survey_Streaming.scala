@@ -40,13 +40,13 @@ var j = 0
       }
 	val spark = SparkSession.builder().appName("Case_Survey_Streaming").enableHiveSupport().getOrCreate()
 	
-	val case_category_details_df = spark.read.format("jdbc").option("url", "jdbc:mysql://dbserver.edu.cloudlab.com/labuser_database").option("driver", "com.mysql.jdbc.Driver")
-	.option("dbtable", "edureka_766323_futurecart_case_category_details").option("user", "edu_labuser").option("password", "edureka").load()
+	val case_category_details_df = spark.read.format("jdbc").option("url", "jdbc:mysql://db_url").option("driver", "com.mysql.jdbc.Driver")
+	.option("dbtable", "username_futurecart_case_category_details").option("user", "user").option("password", "pwd").load()
 	val case_category_details_df_1 = case_category_details_df.selectExpr("category_key", "sub_category_key", "category_description", "sub_category_description", "priority as Priority_key" )
 	case_category_details_df_1.cache()
 
-	val case_priority_details_df = spark.read.format("jdbc").option("url", "jdbc:mysql://dbserver.edu.cloudlab.com/labuser_database").option("driver", "com.mysql.jdbc.Driver")
-	.option("dbtable", "edureka_766323_futurecart_case_priority_details").option("user", "edu_labuser").option("password", "edureka").load()
+	val case_priority_details_df = spark.read.format("jdbc").option("url", "jdbc:mysql://db_url").option("driver", "com.mysql.jdbc.Driver")
+	.option("dbtable", "username_futurecart_case_priority_details").option("user", "edu_labuser").option("password", "pwd").load()
 	case_priority_details_df.cache()
 	println("Getting MySql Case Category and Case Priority tables...")
 	val case_priority_df = case_category_details_df_1.join(case_priority_details_df, case_category_details_df_1("Priority_key") === case_priority_details_df("Priority_key"), "inner")
@@ -100,8 +100,8 @@ var j = 0
 				 """).show(false); 
 		println("Start writing micro batch of case data to HBase...")
 		val config = HBaseConfiguration.create()
-		config.set(TableOutputFormat.OUTPUT_TABLE, "edureka_766323_futurecart_Cases")
-		config.set("hbase.zookeeper.quorum", "ip-20-0-31-210.ec2.internal")
+		config.set(TableOutputFormat.OUTPUT_TABLE, "username_futurecart_Cases")
+		config.set("hbase.zookeeper.quorum", "ip-XX-XX-XX-XX.ec2.internal")
 		config.set("hbase.zookeeper.property.clientPort", "2181")
 		val jobConfig = Job.getInstance(config)
 		jobConfig.setOutputFormatClass(classOf[TableOutputFormat[_]])
@@ -153,8 +153,8 @@ var j = 0
 		import org.apache.spark.sql.SaveMode.Append
 		import spark.implicits._		
 		val config = HBaseConfiguration.create()
-		config.set(TableOutputFormat.OUTPUT_TABLE, "edureka_766323_futurecart_Surveys")
-		config.set("hbase.zookeeper.quorum", "ip-20-0-31-210.ec2.internal")
+		config.set(TableOutputFormat.OUTPUT_TABLE, "username_futurecart_Surveys")
+		config.set("hbase.zookeeper.quorum", "ip-XX-XX-XX-XX.ec2.internal")
 		config.set("hbase.zookeeper.property.clientPort", "2181")
 		val jobConfig = Job.getInstance(config)
 		jobConfig.setOutputFormatClass(classOf[TableOutputFormat[_]])
@@ -194,7 +194,7 @@ var j = 0
 												 x._2._2.Q1, x._2._2.Q3, x._2._2.Q2, x._2._2.Q5, x._2._2.Q4, x._2._2.survey_timestamp, x._2._2.survey_id))
 		val df = rddmapped.toDF()
 		val props = new Properties()
-		props.put("bootstrap.servers", "ip-20-0-31-210.ec2.internal:9092")
+		props.put("bootstrap.servers", "ip-XX-XX-XX-XX.ec2.internal:9092")
 		props.put("acks", "1")
         props.put("retries", "0")
 		props.put("buffer.memory", "104857600")
@@ -203,12 +203,12 @@ var j = 0
 		props.put("value.serializer", "org.apache.kafka.common.serialization.StringSerializer")
 		val producer = new KafkaProducer[String, String](props)
 		val jsonmsg = df.toJSON.collect.mkString("[", "," , "]" )
-		println("JOINING CASE AND SURVEY MICRO STREAM BATCH AND WRITE TO KAKFA TOPIC - edureka_766323_futurecart_case_survey_joined...")
-		val record = new ProducerRecord[String, String]("edureka_766323_futurecart_case_survey_joined", null, jsonmsg)
+		println("JOINING CASE AND SURVEY MICRO STREAM BATCH AND WRITE TO KAKFA TOPIC - username_futurecart_case_survey_joined...")
+		val record = new ProducerRecord[String, String]("username_futurecart_case_survey_joined", null, jsonmsg)
 		producer.send(record)
 		println("Number of joined Records in JOSN format produced in KAFKA topic is : " + df.count)
 		producer.close()
-		println("COMPLETED WRITING JOINED CASE AND SURVEY MICRO STREAM BATCH TO KAKFA TOPIC  - edureka_766323_futurecart_case_survey_joined...")
+		println("COMPLETED WRITING JOINED CASE AND SURVEY MICRO STREAM BATCH TO KAKFA TOPIC  - username_futurecart_case_survey_joined...")
 		//df.show
 	}
 	}
