@@ -1,0 +1,116 @@
+-- create hive database 
+
+create database edureka_766323;
+
+-- Copy text files to user HDFS
+
+hdfs dfs -cp /bigdatapgp/common_folder/project_futurecart/batchdata /user/edureka_766323/
+
+-- Create HBase tables
+
+create 'edureka_766323_futurecart_Cases','Case'
+
+create 'edureka_766323_futurecart_Surveys','Survey'
+
+-- Spark submit jars for loading text files to mysql, load mysql to hive using sqoop and spark
+
+spark2-submit --driver-class-path /mnt/bigdatapgp/edureka_766323/mysql-connector-java-8.0.19.jar --master local[4] --class Load_Files_To_Mysql /mnt/bigdatapgp/edureka_766323/edureka_766323_futurecart/Load_Files_To_MySql/target/scala-2.11/loadfilestomysql_2.11-1.0.jar
+
+sqoop import \
+--connect jdbc:mysql://dbserver.edu.cloudlab.com/labuser_database \
+--username edu_labuser \
+--password edureka \
+--query 'select status, category, sub_category, last_modified_timestamp, case_no, create_timestamp, created_employee_key, call_center_id, product_code, country_cd, communication_mode, from_unixtime(unix_timestamp()) as row_insertion_dttm from edureka_766323_futurecart_case_details where $CONDITIONS ' \
+-m 1 \
+--delete-target-dir \
+--target-dir /user/edureka_766323/edureka_766323_futurecart/futurecart_case_dly_stg/ \
+--hive-overwrite \
+--hive-import \
+--hive-database edureka_766323 \
+--create-hive-table \
+--hive-partition-key create_date \
+--fields-terminated-by '\t' \
+--hive-table futurecart_case_dly_stg \
+--direct
+
+sqoop import \
+--connect jdbc:mysql://dbserver.edu.cloudlab.com/labuser_database \
+--username edu_labuser \
+--password edureka \
+--query 'select Q1, Q3, Q2, Q5, Q4, case_no, survey_timestamp, survey_id, from_unixtime(unix_timestamp()) as row_insertion_dttm from edureka_766323_futurecart_case_survey_details where $CONDITIONS ' \
+-m 1 \
+--delete-target-dir \
+--target-dir /user/edureka_766323/edureka_766323_futurecart/futurecart_survey_dly_stg/ \
+--hive-overwrite \
+--hive-import \
+--hive-database edureka_766323 \
+--create-hive-table \
+--hive-partition-key survey_date \
+--fields-terminated-by '\t' \
+--hive-table futurecart_survey_dly_stg \
+--direct
+
+spark2-submit --driver-class-path /mnt/bigdatapgp/edureka_766323/mysql-connector-java-8.0.19.jar --master local[4] --class Load_MySql_Tables_To_Hive /mnt/bigdatapgp/edureka_766323/edureka_766323_futurecart/Load_MySql_Dim_Tables_To_Hive/target/scala-2.11/loadmysqltablestohive_2.11-1.0.jar
+-- Execute streaming python script
+ 
+python2 realtimedata/realtime_simulator.py --outputLocation /mnt/bigdatapgp/edureka_766323/edureka_766323_futurecart/stream_cases_survey/
+
+-- Create Kafka Topics
+
+kafka-topics --bootstrap-server ip-20-0-31-210.ec2.internal:9092 --topic edureka_766323_futurecart_cases --create --partitions 3 --replication-factor 3
+
+kafka-topics --bootstrap-server ip-20-0-31-210.ec2.internal:9092 --topic edureka_766323_futurecart_surveys --create --partitions 3 --replication-factor 3
+
+kafka-topics --bootstrap-server ip-20-0-31-210.ec2.internal:9092 --topic edureka_766323_futurecart_case_survey_joined --create --partitions 3 --replication-factor 3
+
+-- Start Flume agents to stream JSON files to Kafka topics
+
+flume-ng agent -n agent1 -f /mnt/bigdatapgp/edureka_766323/edureka_766323_futurecart/JsonfilesToKafkaStreaming/stream_case_survey_kafka.conf - Dflume.root.logger=INFO,console
+
+flume-ng agent -n agent2 -f /mnt/bigdatapgp/edureka_766323/edureka_766323_futurecart/JsonfilesToKafkaStreaming/stream_case_survey_kafka.conf - Dflume.root.logger=INFO,console
+
+--Streamed processing with real time KPIs
+
+spark2-submit --driver-class-path /opt/cloudera/parcels/CDH/jars/hbase-client-1.2.0-cdh5.11.1.jar:/opt/cloudera/parcels/CDH/jars/hbase-server-1.2.0-cdh5.11.1.jar:/opt/cloudera/parcels/CDH/jars/hbase-common-1.2.0-cdh5.11.1.jar:/opt/cloudera/parcels/CDH/jars/hbase-protocol-1.2.0-cdh5.11.1.jar:/opt/cloudera/parcels/CDH/jars/hbase-hadoop2-compat-1.2.0-cdh5.11.1.jar:/opt/cloudera/parcels/CDH/jars/hbase-it-1.2.0-cdh5.11.1.jar:/opt/cloudera/parcels/CDH/jars/htrace-core-3.2.0-incubating.jar:/mnt/bigdatapgp/edureka_766323/mysql-connector-java-8.0.19.jar --master local[4] --class Case_Survey_Streaming /mnt/bigdatapgp/edureka_766323/edureka_766323_futurecart/case_survey_spark_stream_code/target/scala-2.11/casesurveystreaming_2.11-1.0.jar ip-20-0-31-210.ec2.internal:2181 grpIndProj edureka_766323_futurecart_cases edureka_766323_futurecart_surveys 4
+
+-- create fact table
+
+spark2-submit --driver-class-path /opt/cloudera/parcels/CDH/jars/hbase-client-1.2.0-cdh5.11.1.jar:/opt/cloudera/parcels/CDH/jars/hbase-server-1.2.0-cdh5.11.1.jar:/opt/cloudera/parcels/CDH/jars/hbase-common-1.2.0-cdh5.11.1.jar:/opt/cloudera/parcels/CDH/jars/hbase-protocol-1.2.0-cdh5.11.1.jar:/opt/cloudera/parcels/CDH/jars/hbase-hadoop2-compat-1.2.0-cdh5.11.1.jar:/opt/cloudera/parcels/CDH/jars/hbase-it-1.2.0-cdh5.11.1.jar:/opt/cloudera/parcels/CDH/jars/htrace-core-3.2.0-incubating.jar:/mnt/bigdatapgp/edureka_766323/mysql-connector-java-8.0.19.jar --master local[4] --class Load_HBase_To_Hive_Create_Fact /mnt/bigdatapgp/edureka_766323/edureka_766323_futurecart/Load_HBase_To_Hive_Create_Fact_Table/target/scala-2.11/load_hbase_to_hive_fact_2.11-1.0.jar
+
+-- Test consumer for joined stream of cases and survey kakfa topic
+
+kafka-console-consumer --bootstrap-server ip-20-0-31-210.ec2.internal:9092 --topic edureka_766323_futurecart_case_survey_joined --from-beginning --property value.serializer=custom.class.serialization.JsonDeserializer
+
+
+-- Execute below commands to delete all tables, topics before executing project steps - 
+
+kafka-topics --bootstrap-server ip-20-0-31-210.ec2.internal:9092 --delete --topic edureka_766323_futurecart_cases
+
+kafka-topics --bootstrap-server ip-20-0-31-210.ec2.internal:9092 --delete --topic edureka_766323_futurecart_surveys
+
+kafka-topics --bootstrap-server ip-20-0-31-210.ec2.internal:9092 --delete --topic edureka_766323_futurecart_case_survey_joined
+
+-- drop HBase tables
+
+disable 'edureka_766323_futurecart_Cases'
+
+disable 'edureka_766323_futurecart_Surveys'
+
+drop 'edureka_766323_futurecart_Cases'
+
+drop 'edureka_766323_futurecart_Surveys'
+
+-- drop Mysql tables
+drop table edureka_766323_futurecart_calendar_details; 
+drop table edureka_766323_futurecart_call_center_details; 
+drop table edureka_766323_futurecart_case_category_details; 
+drop table edureka_766323_futurecart_case_country_details; 
+drop table edureka_766323_futurecart_case_priority_details; 
+drop table edureka_766323_futurecart_employee_details;
+drop table edureka_766323_futurecart_product_details; 
+drop table edureka_766323_futurecart_survey_question_details; 
+drop table edureka_766323_futurecart_case_details; 
+drop table edureka_766323_futurecart_case_survey_details;
+
+-- drop Hive database
+drop database edureka_766323 cascade;
