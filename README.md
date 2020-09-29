@@ -1,5 +1,5 @@
 # Big Data Engineering Project
-End to End Big data engineering project with streamed and batch data analysis using Flume, Kafka, Spark Streaming, Spark SQL, Scala, Hiva and HBase.
+End to End Big data engineering project with streamed and batch data analysis using Flume, Kafka, Spark Streaming, Spark SQL, Scala, Hive and HBase with sample datasets.
 1. Load batch data text files to MySql
 2. Stream JSON file to Kafka using Flume
 3. Spark Streaming to produce real time KPI's using streamed and batch data lookup.
