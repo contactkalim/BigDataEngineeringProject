@@ -4,7 +4,7 @@ create database username;
 
 -- Copy text files to user HDFS
 
-hdfs dfs -cp /bigdatapgp/common_folder/project_futurecart/batchdata /user/username/
+hdfs dfs -cp /common_folder/project_futurecart/batchdata /user/username/
 
 -- Create HBase tables
 
@@ -14,10 +14,10 @@ create 'username_futurecart_Surveys','Survey'
 
 -- Spark submit jars for loading text files to mysql, load mysql to hive using sqoop and spark
 
-spark2-submit --driver-class-path /mnt/bigdatapgp/username/mysql-connector-java-8.0.19.jar --master local[4] --class Load_Files_To_Mysql /mnt/bigdatapgp/username/username_futurecart/Load_Files_To_MySql/target/scala-2.11/loadfilestomysql_2.11-1.0.jar
+spark2-submit --driver-class-path /mnt/username/mysql-connector-java-8.0.19.jar --master local[4] --class Load_Files_To_Mysql /mnt/username/username_futurecart/Load_Files_To_MySql/target/scala-2.11/loadfilestomysql_2.11-1.0.jar
 
 sqoop import \
---connect jdbc:mysql://dbserver.edu.cloudlab.com/labuser_database \
+--connect jdbc:mysql://db_url \
 --username user \
 --password pwd \
 --query 'select status, category, sub_category, last_modified_timestamp, case_no, create_timestamp, created_employee_key, call_center_id, product_code, country_cd, communication_mode, from_unixtime(unix_timestamp()) as row_insertion_dttm from username_futurecart_case_details where $CONDITIONS ' \
@@ -34,7 +34,7 @@ sqoop import \
 --direct
 
 sqoop import \
---connect jdbc:mysql://dbserver.edu.cloudlab.com/labuser_database \
+--connect jdbc:mysql://db_url \
 --username user \
 --password pwd \
 --query 'select Q1, Q3, Q2, Q5, Q4, case_no, survey_timestamp, survey_id, from_unixtime(unix_timestamp()) as row_insertion_dttm from username_futurecart_case_survey_details where $CONDITIONS ' \
@@ -50,45 +50,45 @@ sqoop import \
 --hive-table futurecart_survey_dly_stg \
 --direct
 
-spark2-submit --driver-class-path /mnt/bigdatapgp/username/mysql-connector-java-8.0.19.jar --master local[4] --class Load_MySql_Tables_To_Hive /mnt/bigdatapgp/username/username_futurecart/Load_MySql_Dim_Tables_To_Hive/target/scala-2.11/loadmysqltablestohive_2.11-1.0.jar
+spark2-submit --driver-class-path /mnt/username/mysql-connector-java-8.0.19.jar --master local[4] --class Load_MySql_Tables_To_Hive /mnt/username/username_futurecart/Load_MySql_Dim_Tables_To_Hive/target/scala-2.11/loadmysqltablestohive_2.11-1.0.jar
 -- Execute streaming python script
  
-python2 realtimedata/realtime_simulator.py --outputLocation /mnt/bigdatapgp/username/username_futurecart/stream_cases_survey/
+python2 realtimedata/realtime_simulator.py --outputLocation /mnt/username/username_futurecart/stream_cases_survey/
 
 -- Create Kafka Topics
 
-kafka-topics --bootstrap-server ip-20-0-31-210.ec2.internal:9092 --topic username_futurecart_cases --create --partitions 3 --replication-factor 3
+kafka-topics --bootstrap-server ip-XX-XX-XX-XX.ec2.internal:9092 --topic username_futurecart_cases --create --partitions 3 --replication-factor 3
 
-kafka-topics --bootstrap-server ip-20-0-31-210.ec2.internal:9092 --topic username_futurecart_surveys --create --partitions 3 --replication-factor 3
+kafka-topics --bootstrap-server ip-XX-XX-XX-XX.ec2.internal:9092 --topic username_futurecart_surveys --create --partitions 3 --replication-factor 3
 
-kafka-topics --bootstrap-server ip-20-0-31-210.ec2.internal:9092 --topic username_futurecart_case_survey_joined --create --partitions 3 --replication-factor 3
+kafka-topics --bootstrap-server ip-XX-XX-XX-XX.ec2.internal:9092 --topic username_futurecart_case_survey_joined --create --partitions 3 --replication-factor 3
 
 -- Start Flume agents to stream JSON files to Kafka topics
 
-flume-ng agent -n agent1 -f /mnt/bigdatapgp/username/username_futurecart/JsonfilesToKafkaStreaming/stream_case_survey_kafka.conf - Dflume.root.logger=INFO,console
+flume-ng agent -n agent1 -f /mnt/username/username_futurecart/JsonfilesToKafkaStreaming/stream_case_survey_kafka.conf - Dflume.root.logger=INFO,console
 
-flume-ng agent -n agent2 -f /mnt/bigdatapgp/username/username_futurecart/JsonfilesToKafkaStreaming/stream_case_survey_kafka.conf - Dflume.root.logger=INFO,console
+flume-ng agent -n agent2 -f /mnt/username/username_futurecart/JsonfilesToKafkaStreaming/stream_case_survey_kafka.conf - Dflume.root.logger=INFO,console
 
 --Streamed processing with real time KPIs
 
-spark2-submit --driver-class-path /opt/cloudera/parcels/CDH/jars/hbase-client-1.2.0-cdh5.11.1.jar:/opt/cloudera/parcels/CDH/jars/hbase-server-1.2.0-cdh5.11.1.jar:/opt/cloudera/parcels/CDH/jars/hbase-common-1.2.0-cdh5.11.1.jar:/opt/cloudera/parcels/CDH/jars/hbase-protocol-1.2.0-cdh5.11.1.jar:/opt/cloudera/parcels/CDH/jars/hbase-hadoop2-compat-1.2.0-cdh5.11.1.jar:/opt/cloudera/parcels/CDH/jars/hbase-it-1.2.0-cdh5.11.1.jar:/opt/cloudera/parcels/CDH/jars/htrace-core-3.2.0-incubating.jar:/mnt/bigdatapgp/username/mysql-connector-java-8.0.19.jar --master local[4] --class Case_Survey_Streaming /mnt/bigdatapgp/username/username_futurecart/case_survey_spark_stream_code/target/scala-2.11/casesurveystreaming_2.11-1.0.jar ip-20-0-31-210.ec2.internal:2181 grpIndProj username_futurecart_cases username_futurecart_surveys 4
+spark2-submit --driver-class-path /opt/cloudera/parcels/CDH/jars/hbase-client-1.2.0-cdh5.11.1.jar:/opt/cloudera/parcels/CDH/jars/hbase-server-1.2.0-cdh5.11.1.jar:/opt/cloudera/parcels/CDH/jars/hbase-common-1.2.0-cdh5.11.1.jar:/opt/cloudera/parcels/CDH/jars/hbase-protocol-1.2.0-cdh5.11.1.jar:/opt/cloudera/parcels/CDH/jars/hbase-hadoop2-compat-1.2.0-cdh5.11.1.jar:/opt/cloudera/parcels/CDH/jars/hbase-it-1.2.0-cdh5.11.1.jar:/opt/cloudera/parcels/CDH/jars/htrace-core-3.2.0-incubating.jar:/mnt/username/mysql-connector-java-8.0.19.jar --master local[4] --class Case_Survey_Streaming /mnt/username/username_futurecart/case_survey_spark_stream_code/target/scala-2.11/casesurveystreaming_2.11-1.0.jar ip-XX-XX-XX-XX.ec2.internal:2181 grpIndProj username_futurecart_cases username_futurecart_surveys 4
 
 -- create fact table
 
-spark2-submit --driver-class-path /opt/cloudera/parcels/CDH/jars/hbase-client-1.2.0-cdh5.11.1.jar:/opt/cloudera/parcels/CDH/jars/hbase-server-1.2.0-cdh5.11.1.jar:/opt/cloudera/parcels/CDH/jars/hbase-common-1.2.0-cdh5.11.1.jar:/opt/cloudera/parcels/CDH/jars/hbase-protocol-1.2.0-cdh5.11.1.jar:/opt/cloudera/parcels/CDH/jars/hbase-hadoop2-compat-1.2.0-cdh5.11.1.jar:/opt/cloudera/parcels/CDH/jars/hbase-it-1.2.0-cdh5.11.1.jar:/opt/cloudera/parcels/CDH/jars/htrace-core-3.2.0-incubating.jar:/mnt/bigdatapgp/username/mysql-connector-java-8.0.19.jar --master local[4] --class Load_HBase_To_Hive_Create_Fact /mnt/bigdatapgp/username/username_futurecart/Load_HBase_To_Hive_Create_Fact_Table/target/scala-2.11/load_hbase_to_hive_fact_2.11-1.0.jar
+spark2-submit --driver-class-path /opt/cloudera/parcels/CDH/jars/hbase-client-1.2.0-cdh5.11.1.jar:/opt/cloudera/parcels/CDH/jars/hbase-server-1.2.0-cdh5.11.1.jar:/opt/cloudera/parcels/CDH/jars/hbase-common-1.2.0-cdh5.11.1.jar:/opt/cloudera/parcels/CDH/jars/hbase-protocol-1.2.0-cdh5.11.1.jar:/opt/cloudera/parcels/CDH/jars/hbase-hadoop2-compat-1.2.0-cdh5.11.1.jar:/opt/cloudera/parcels/CDH/jars/hbase-it-1.2.0-cdh5.11.1.jar:/opt/cloudera/parcels/CDH/jars/htrace-core-3.2.0-incubating.jar:/mnt/username/mysql-connector-java-8.0.19.jar --master local[4] --class Load_HBase_To_Hive_Create_Fact /mnt/username/username_futurecart/Load_HBase_To_Hive_Create_Fact_Table/target/scala-2.11/load_hbase_to_hive_fact_2.11-1.0.jar
 
 -- Test consumer for joined stream of cases and survey kakfa topic
 
-kafka-console-consumer --bootstrap-server ip-20-0-31-210.ec2.internal:9092 --topic username_futurecart_case_survey_joined --from-beginning --property value.serializer=custom.class.serialization.JsonDeserializer
+kafka-console-consumer --bootstrap-server ip-XX-XX-XX-XX.ec2.internal:9092 --topic username_futurecart_case_survey_joined --from-beginning --property value.serializer=custom.class.serialization.JsonDeserializer
 
 
 -- Execute below commands to delete all tables, topics before executing project steps - 
 
-kafka-topics --bootstrap-server ip-20-0-31-210.ec2.internal:9092 --delete --topic username_futurecart_cases
+kafka-topics --bootstrap-server ip-XX-XX-XX-XX.ec2.internal:9092 --delete --topic username_futurecart_cases
 
-kafka-topics --bootstrap-server ip-20-0-31-210.ec2.internal:9092 --delete --topic username_futurecart_surveys
+kafka-topics --bootstrap-server ip-XX-XX-XX-XX.ec2.internal:9092 --delete --topic username_futurecart_surveys
 
-kafka-topics --bootstrap-server ip-20-0-31-210.ec2.internal:9092 --delete --topic username_futurecart_case_survey_joined
+kafka-topics --bootstrap-server ip-XX-XX-XX-XX.ec2.internal:9092 --delete --topic username_futurecart_case_survey_joined
 
 -- drop HBase tables
 
