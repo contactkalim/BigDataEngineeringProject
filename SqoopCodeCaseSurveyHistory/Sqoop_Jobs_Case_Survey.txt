@@ -1,0 +1,33 @@
+sqoop import \
+--connect jdbc:mysql://dbserver.edu.cloudlab.com/labuser_database \
+--username edu_labuser \
+--password edureka \
+--query 'select status, category, sub_category, last_modified_timestamp, case_no, create_timestamp, created_employee_key, call_center_id, product_code, country_cd, communication_mode, from_unixtime(unix_timestamp()) as row_insertion_dttm from edureka_766323_futurecart_case_details where $CONDITIONS ' \
+-m 1 \
+--delete-target-dir \
+--target-dir /user/edureka_766323/edureka_766323_futurecart/futurecart_case_dly_stg/ \
+--hive-overwrite \
+--hive-import \
+--hive-database edureka_766323 \
+--create-hive-table \
+--hive-partition-key create_date \
+--fields-terminated-by '\t' \
+--hive-table futurecart_case_dly_stg \
+--direct
+
+sqoop import \
+--connect jdbc:mysql://dbserver.edu.cloudlab.com/labuser_database \
+--username edu_labuser \
+--password edureka \
+--query 'select Q1, Q3, Q2, Q5, Q4, case_no, survey_timestamp, survey_id, from_unixtime(unix_timestamp()) as row_insertion_dttm from edureka_766323_futurecart_case_survey_details where $CONDITIONS ' \
+-m 1 \
+--delete-target-dir \
+--target-dir /user/edureka_766323/edureka_766323_futurecart/futurecart_survey_dly_stg/ \
+--hive-overwrite \
+--hive-import \
+--hive-database edureka_766323 \
+--create-hive-table \
+--hive-partition-key survey_date \
+--fields-terminated-by '\t' \
+--hive-table futurecart_survey_dly_stg \
+--direct
