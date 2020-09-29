@@ -14,21 +14,21 @@ object Load_Files_To_Mysql {
 	
     val spark = SparkSession.builder().appName("SparkSessionZipsExample").enableHiveSupport().getOrCreate()
 	println("Reading text files...")
-	val calendar_details = spark.read.format("csv").option("sep","\t").option("header","true").load("hdfs:///user/edureka_766323/batchdata/futurecart_calendar_details.txt")
-	val call_center_details = spark.read.format("csv").option("sep","\t").option("header","true").load("hdfs:///user/edureka_766323/batchdata/futurecart_call_center_details.txt")
-	val case_category_details = spark.read.format("csv").option("sep","\t").option("header","true").load("hdfs:///user/edureka_766323/batchdata/futurecart_case_category_details.txt")
-	val case_country_details = spark.read.format("csv").option("sep","\t").option("header","true").load("hdfs:///user/edureka_766323/batchdata/futurecart_case_country_details.txt")
-	val case_priority_details = spark.read.format("csv").option("sep","\t").option("header","true").load("hdfs:///user/edureka_766323/batchdata/futurecart_case_priority_details.txt")
-	val employee_details = spark.read.format("csv").option("sep","\t").option("header","true").load("hdfs:///user/edureka_766323/batchdata/futurecart_employee_details.txt")
-	val product_details = spark.read.format("csv").option("sep","\t").option("header","true").load("hdfs:///user/edureka_766323/batchdata/futurecart_product_details.txt")
-	val survey_question_details = spark.read.format("csv").option("sep","\t").option("header","true").load("/user/edureka_766323/batchdata/futurecart_survey_question_details.txt")
-	val case_details = spark.read.format("csv").option("sep","\t").option("header","true").load("hdfs:///user/edureka_766323/batchdata/futurecart_case_details.txt")
-	val case_survey_details = spark.read.format("csv").option("sep","\t").option("header","true").load("hdfs:///user/edureka_766323/batchdata/futurecart_case_survey_details.txt")
+	val calendar_details = spark.read.format("csv").option("sep","\t").option("header","true").load("hdfs:///user/username/batchdata/futurecart_calendar_details.txt")
+	val call_center_details = spark.read.format("csv").option("sep","\t").option("header","true").load("hdfs:///user/username/batchdata/futurecart_call_center_details.txt")
+	val case_category_details = spark.read.format("csv").option("sep","\t").option("header","true").load("hdfs:///user/username/batchdata/futurecart_case_category_details.txt")
+	val case_country_details = spark.read.format("csv").option("sep","\t").option("header","true").load("hdfs:///user/username/batchdata/futurecart_case_country_details.txt")
+	val case_priority_details = spark.read.format("csv").option("sep","\t").option("header","true").load("hdfs:///user/username/batchdata/futurecart_case_priority_details.txt")
+	val employee_details = spark.read.format("csv").option("sep","\t").option("header","true").load("hdfs:///user/username/batchdata/futurecart_employee_details.txt")
+	val product_details = spark.read.format("csv").option("sep","\t").option("header","true").load("hdfs:///user/username/batchdata/futurecart_product_details.txt")
+	val survey_question_details = spark.read.format("csv").option("sep","\t").option("header","true").load("/user/username/batchdata/futurecart_survey_question_details.txt")
+	val case_details = spark.read.format("csv").option("sep","\t").option("header","true").load("hdfs:///user/username/batchdata/futurecart_case_details.txt")
+	val case_survey_details = spark.read.format("csv").option("sep","\t").option("header","true").load("hdfs:///user/username/batchdata/futurecart_case_survey_details.txt")
 
 	val prop = new java.util.Properties
 	prop.setProperty("driver", "com.mysql.jdbc.Driver")
-	prop.setProperty("user", "edu_labuser")
-	prop.setProperty("password", "edureka") 
+	prop.setProperty("user", "user")
+	prop.setProperty("password", "pwd") 
 
 	val calendar_details_df = calendar_details.selectExpr("cast(calendar_date as date) calendar_date", "cast(date_desc as string) date_desc", "cast(week_day_nbr as int) week_day_nbr", 
 	"cast(week_number as int) week_number", "cast(week_name as string) week_name", "cast(year_week_number as int) year_week_number", "cast(month_number as int) month_number" , 
@@ -65,52 +65,46 @@ object Load_Files_To_Mysql {
 	 "cast(survey_timestamp as string) survey_timestamp", "cast(Q1 as string) Q1", "cast(Q2 as string) Q2", 
 	 "cast(Q3 as string) Q3", "cast(Q4 as string) Q4", "cast(Q5 as string) Q5", "cast(survey_timestamp as date) as survey_date" )
 	 
-	val url = "jdbc:mysql://dbserver.edu.cloudlab.com/labuser_database" 
+	val url = "jdbc:mysql://db_url" 
 	
-	println("Creating MySql table - edureka_766323_futurecart_calendar_details")
-	var table = "edureka_766323_futurecart_calendar_details" 
+	println("Creating MySql table - username_futurecart_calendar_details")
+	var table = "username_futurecart_calendar_details" 
 	calendar_details_df.write.jdbc(url, table, prop)
 
-	println("Creating MySql table - edureka_766323_futurecart_call_center_details")
-	table = "edureka_766323_futurecart_call_center_details" 
+	println("Creating MySql table - username_futurecart_call_center_details")
+	table = "username_futurecart_call_center_details" 
 	call_center_details_df.write.jdbc(url, table, prop)
 
-	println("Creating MySql table - edureka_766323_futurecart_case_category_details")
-	table = "edureka_766323_futurecart_case_category_details" 
+	println("Creating MySql table - username_futurecart_case_category_details")
+	table = "username_futurecart_case_category_details" 
 	case_category_details_df.write.jdbc(url, table, prop)
 
-	println("Creating MySql table - edureka_766323_futurecart_case_country_details")
-	table = "edureka_766323_futurecart_case_country_details" 
+	println("Creating MySql table - username_futurecart_case_country_details")
+	table = "username_futurecart_case_country_details" 
 	case_country_details_df.write.jdbc(url, table, prop)
 
-	println("Creating MySql table - edureka_766323_futurecart_case_priority_details")
-	table = "edureka_766323_futurecart_case_priority_details" 
+	println("Creating MySql table - username_futurecart_case_priority_details")
+	table = "username_futurecart_case_priority_details" 
 	case_priority_details_df.write.jdbc(url, table, prop)
 	
-	println("Creating MySql table - edureka_766323_futurecart_employee_details")
-	table = "edureka_766323_futurecart_employee_details" 
+	println("Creating MySql table - username_futurecart_employee_details")
+	table = "username_futurecart_employee_details" 
 	employee_details_df.write.jdbc(url, table, prop)
 
-	println("Creating MySql table - edureka_766323_futurecart_product_details")
-	table = "edureka_766323_futurecart_product_details" 
+	println("Creating MySql table - username_futurecart_product_details")
+	table = "username_futurecart_product_details" 
 	product_details_df.write.jdbc(url, table, prop)
 
-	println("Creating MySql table - edureka_766323_futurecart_survey_question_details")
-	table = "edureka_766323_futurecart_survey_question_details" 
+	println("Creating MySql table - username_futurecart_survey_question_details")
+	table = "username_futurecart_survey_question_details" 
 	survey_question_details_df.write.jdbc(url, table, prop)
 
-	println("Creating MySql table - edureka_766323_futurecart_case_details")
-	table = "edureka_766323_futurecart_case_details" 
+	println("Creating MySql table - username_futurecart_case_details")
+	table = "username_futurecart_case_details" 
 	case_details_df.write.jdbc(url, table, prop)
 
-	println("Creating MySql table - edureka_766323_futurecart_case_survey_details")
-	table = "edureka_766323_futurecart_case_survey_details" 
+	println("Creating MySql table - username_futurecart_case_survey_details")
+	table = "username_futurecart_case_survey_details" 
 	case_survey_details_df.write.jdbc(url, table, prop)
   }
 }
-
-
-
-
-
-
