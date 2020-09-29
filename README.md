@@ -6,4 +6,4 @@ End to End Big data engineering project with streamed and batch data analysis us
 4. Spark Streaming to HBase to save streamed data
 5. Join 2 streams in Spark Streaming and push to Kafka Topic.
 6. Batch data anayisis - create fact and pivot table by combining batch and streamed data from HBase to Hive.
-<img src="/docs/logo.png" alt="Process Flow Diagram"/>
+<img src="/processflow (4).png" alt="Process Flow Diagram"/>
